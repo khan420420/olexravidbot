@@ -1,52 +1,57 @@
-const express = require("express");
-const axios = require("axios");
+import express from "express";
+import bodyParser from "body-parser";
+import axios from "axios";
 
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
 
 const TOKEN = process.env.TELEGRAM_TOKEN;
-const SERVER_URL = process.env.SERVER_URL;
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
-// Root endpoint
+// ✅ Test route for Railway
 app.get("/", (req, res) => {
-  res.send("OlexravidBot is running ✅");
+  res.send("OlexRavidBot is running ✅");
 });
 
-// Set Webhook endpoint
+// ✅ Route to set the webhook
 app.get("/set-webhook", async (req, res) => {
   try {
-    const url = `${SERVER_URL}/webhook/${TOKEN}`;
-    const response = await axios.get(
-      `${TELEGRAM_API}/setWebhook?url=${url}`
-    );
+    const url = `${TELEGRAM_API}/setWebhook?url=https://olexravidbot-production.up.railway.app/webhook`;
+    const response = await axios.get(url);
     res.json(response.data);
-  } catch (err) {
-    res.status(500).send(err.message);
+  } catch (error) {
+    res.status(500).send(error.toString());
   }
 });
 
-// Telegram will send updates here
-app.post(`/webhook/${TOKEN}`, (req, res) => {
-  const message = req.body.message;
+// ✅ Telegram will POST updates here
+app.post("/webhook", async (req, res) => {
+  try {
+    const chatId = req.body.message.chat.id;
+    const text = req.body.message.text;
 
-  if (message && message.text) {
-    const chatId = message.chat.id;
-    const text = message.text;
+    if (text === "/start") {
+      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: chatId,
+        text: "Hello 👋! OlexRavidBot is active on Railway 🚀"
+      });
+    } else {
+      await axios.post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: chatId,
+        text: `You said: ${text}`
+      });
+    }
 
-    // Echo back the same text
-    axios.post(`${TELEGRAM_API}/sendMessage`, {
-      chat_id: chatId,
-      text: `You said: ${text}`,
-    });
+    res.send("ok");
+  } catch (error) {
+    console.error("Error handling webhook:", error.toString());
+    res.send("error");
   }
-
-  res.sendStatus(200);
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`OlexravidBot running on port ${PORT}`);
+  console.log(`Bot server running on port ${PORT}`);
 });
+
 
