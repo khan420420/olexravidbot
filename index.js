@@ -3,17 +3,22 @@ import bodyParser from "body-parser";
 import axios from "axios";
 
 const app = express();
-app.use(bodyParser.json());
 
+// Middlewares
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public")); // frontend files
+
+// Telegram Bot Setup
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`;
 
-// ✅ Test route for Railway
+// ✅ Health check route
 app.get("/", (req, res) => {
   res.send("OlexRavidBot is running ✅");
 });
 
-// ✅ Route to set the webhook
+// ✅ Set the webhook
 app.get("/set-webhook", async (req, res) => {
   try {
     const url = `${TELEGRAM_API}/setWebhook?url=https://olexravidbot-production.up.railway.app/webhook`;
@@ -24,7 +29,7 @@ app.get("/set-webhook", async (req, res) => {
   }
 });
 
-// ✅ Telegram will POST updates here
+// ✅ Telegram webhook handler
 app.post("/webhook", async (req, res) => {
   try {
     const chatId = req.body.message.chat.id;
@@ -49,6 +54,19 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
+// ✅ Frontend settings page
+app.get("/settings", (req, res) => {
+  res.sendFile("settings.html", { root: "public" });
+});
+
+// ✅ Handle settings form submission
+app.post("/save-token", (req, res) => {
+  const { token } = req.body || {};
+  console.log("📥 Token received from settings page:", token);
+  res.send(`✅ Token received: ${token}`);
+});
+
+// Start server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Bot server running on port ${PORT}`);
